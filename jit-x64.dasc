@@ -31,24 +31,43 @@ int main(int argc, char *argv[])
 	unsigned int maxpc = 0;
 	int pcstack[MAX_NESTING];
 	int *top = pcstack, *limit = pcstack + MAX_NESTING;
+	int count;
 
 	// Function prologue.
 	|  push PTR
 	|  mov  PTR, rdi      // rdi store 1st argument
 
+
 	for (char *p = read_file(argv[1]); *p; p++) {
+		count = 0;
 		switch (*p) {
 		case '>':
-			|  inc  PTR
+			do{
+				count++;			
+			}while (*(++p) == '>');
+			p--;
+			|  add  PTR, count
 			break;
 		case '<':
-			|  dec  PTR
+			do{
+				count++;			
+			}while (*(++p) == '<');
+			p--;
+			|  sub  PTR, count
 			break;
 		case '+':
-			|  inc  byte [PTR]
+			do{
+				count++;
+			}while (*(++p) == '+');
+			p--;
+			|  add byte [PTR], count
 			break;
 		case '-':
-			|  dec  byte [PTR]
+			do{
+				count++;			
+			}while (*(++p) == '-');
+			p--;
+			|  sub  byte [PTR], count
 			break;
 		case '.':
 			|  movzx edi, byte [PTR]
@@ -62,7 +81,7 @@ int main(int argc, char *argv[])
 			if (top == limit) err("Nesting too deep.");
 			// Each loop gets two pclabels: at the beginning and end.
 			// We store pclabel offsets in a stack to link the loop
-			// begin and end together.
+			// begin and end together.	
 			maxpc += 2;
 			*top++ = maxpc;
 			dasm_growpc(&state, maxpc);
